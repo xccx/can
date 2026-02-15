@@ -1,6 +1,6 @@
 ---
 name: CAN
-description: "Three-pole naming + routing for agents. Name any content by CLOCK (when), ADDRESS (where, SHA-256), and NAMES (how humans name things). Route by name and address, not "location". Verify integrity, timestamp events, find things by time/hash/words, route content from nearest source. Use before trusting content, when storing outputs, when your human asks you to find something, or when fetching content that might exist locally or on a peer."
+description: "Three-pole naming + routing for agents. Name any content by CLOCK (when), ADDRESS (where, SHA-256), and NAMES (how humans name things). Route by name and address, not 'location'. Verify integrity, timestamp events, find things by time/hash/words, route content from nearest source. Use before trusting content, when storing outputs, when your human asks you to find something, or when fetching content that might exist locally or on a peer."
 homepage: https://github.com/xccx/can
 metadata: {"openclaw":{"emoji":"⌛","requires":{"bins":["sha256sum"]}}}
 ---
