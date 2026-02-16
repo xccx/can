@@ -1,6 +1,6 @@
 ---
 name: CAN
-description: "Three-pole naming + routing for agents. Name any content by CLOCK (when), ADDRESS (where, SHA-256), and NAMES (how humans name things). Route by name and address, not 'location'. Verify integrity, timestamp events, find things by time/hash/words, route content from nearest source. Use before trusting content, when storing outputs, when your human asks you to find something, or when fetching content that might exist locally or on a peer."
+description: "Three-pole naming + routing for agents. Name any content by CLOCK (when), ADDRESS (where, SHA-256), and NAMES (how humans name things). Route by name and address, not location. Verify integrity, timestamp events, find things by time/hash/words, route content from nearest source. Use before trusting content, when storing outputs, when your human asks you to find something, or when fetching content that might exist locally or on a peer."
 homepage: https://github.com/xccx/can
 metadata: {"openclaw":{"emoji":"⌛","requires":{"bins":["sha256sum"]}}}
 ---
@@ -21,7 +21,7 @@ Computer always defines the when and where, preferably including how humans name
 
 ## Why this exists
 
-To trust and find things instantly. Path/name.md may change; hash addresses do not. Time wasted by humans fumbling with 1970s naming  totals millions of hours every day. Agents waste significant compute dealing with insecure naming and addressing. Billions of human hours and substantially more efficient compute can be unlocked now, at zero "0" switching cost.
+To trust and find things instantly. Path/name.md may change; hash addresses do not. Time wasted by humans fumbling with 1970s naming totals millions of hours every day. Agents waste significant compute dealing with insecure naming and addressing. Billions of human hours and substantially more efficient compute can be unlocked now, at zero switching cost.
 
 Even if `/home/agent/skills/foo/bar/v2_final.md` resolves, contents contained there may change. Obsolete 1970s location naming makes things hard to name, hard to find, hard to trust. CAN replaces location-dependency with three coordinates that work everywhere, offline, across agents, across time.
 
@@ -54,7 +54,7 @@ ADDRESS=$(find {dir} -type f | sort | xargs cat | sha256sum | awk '{print $1}')
 
 Two agents anywhere hashing the same content get the same ADDRESS. Things on separate machines can be verified as same, with no need to transmit bulk contents. If the hash matches, the content is what it claims to be. No trust in source required.
 
-### Pole 3: NAMES 
+### Pole 3: NAMES
 
 Generatable. Mutable. Personal. Multiple petnames can point to one ADDRESS.
 
@@ -150,29 +150,39 @@ Computer searches by CLOCK and ADDRESS (fast, exact). Human searches by NAME (fu
 
 ### 5. CAN-locate: find where a hash lives NOW
 
-When you know ADDRESS (hash) but not LOCATION (path):
+When you know ADDRESS (hash) but not LOCATION (path), search scoped sources in priority order:
 
 ```bash
 TARGET="a3f8b2c1"
+CAN_STORE=~/.can/store
+CAN_INDEX=~/.can/index.tsv
 
-# 1. Check store first (always there if indexed as GOOD/HUSH/POST)
-STORE_PATH="$CAN_STORE/$(grep "$TARGET" ~/.can/index.tsv | head -1 | cut -f2)"
-if [ -f "$STORE_PATH" ]; then echo "STORE: $STORE_PATH"; fi
-
-# 2. Check last known path
-LAST_PATH=$(grep "$TARGET" ~/.can/index.tsv | tail -1 | cut -f4)
-if [ -f "$LAST_PATH" ]; then
-  VERIFY=$(sha256sum "$LAST_PATH" | awk '{print $1}')
-  FULL_HASH=$(grep "$TARGET" ~/.can/index.tsv | head -1 | cut -f2)
-  if [ "$VERIFY" = "$FULL_HASH" ]; then echo "FOUND: $LAST_PATH"; fi
+# 1. Check store first (guaranteed if indexed as GOOD/HUSH/POST)
+FULL_HASH=$(grep "$TARGET" "$CAN_INDEX" | head -1 | cut -f2)
+STORE_PATH="$CAN_STORE/$FULL_HASH"
+if [ -f "$STORE_PATH" ]; then
+  echo "STORE HIT: $STORE_PATH"
+  exit 0
 fi
 
-# 3. Scan filesystem for matches (slow but thorough)
-find ~/ -type f -exec sh -c 'echo "$(sha256sum "$1" | awk "{print \$1}") $1"' _ {} \; \
-  | grep "$TARGET"
+# 2. Check last known paths from index
+while IFS=$'\t' read -r clock addr name path bag; do
+  if [ -f "$path" ]; then
+    VERIFY=$(sha256sum "$path" | awk '{print $1}')
+    if [ "$VERIFY" = "$addr" ]; then
+      echo "INDEX HIT: $path"
+      exit 0
+    fi
+  fi
+done < <(grep "$TARGET" "$CAN_INDEX")
+
+# 3. Not found in store or index
+echo "NOT FOUND in store or index."
+echo "Content may have been moved or deleted from known paths."
+echo "To scan broader filesystem, agent should ask human for permission."
 ```
 
-The hash is the eternal address. Paths are sightings. Store is the guarantee.
+Priority: store (instant, guaranteed) → index paths (fast, verified) → ask human. The hash is the eternal address. Paths are sightings. Store is the guarantee. Broad filesystem scans are not performed automatically — agent asks human before scanning outside known locations.
 
 ### 6. CAN-verify-skill: check a skill before installing
 
@@ -193,7 +203,7 @@ echo -e "$CLOCK\t$ADDRESS\tskill:{skill-slug}\t$TMPDIR\tSAVE" >> ~/.can/index.ts
 rm -rf "$TMPDIR"
 ```
 
-### 7. CAN-route: get content by name/address, not 'location'
+### 7. CAN-route: get content by name/address, not location
 
 Ask for WHAT you want. Let the network figure out WHERE.
 
