@@ -1,72 +1,28 @@
-# CAN
+# CAN: Clock Address Naming
 
-Clock Address Naming. Three-pole naming + routing for agents.
+Three-pole naming + routing for agents and humans.
 
 ```
-CLOCK    = when     (millisecond unix timestamp)
-ADDRESS  = where    (SHA-256 content hash)
-NAME     = how      (petnames, tags, whatever you want)
+CLOCK    = WHEN     (millisecond unix timestamp)
+ADDRESS  = WHERE    (SHA-256 content hash)
+NAMES    = HOW      (petnames, tags, whatever you want)
 ```
 
 ## What
 
-Every thing gets named three ways: in time, at content hash, and by human language. Objective time/hash naming is automatic, unique, immutable. Subjective naming is mutable, easily edited. So we trust things, and find them instantly.
-
-v1.3.1 adds routing: get things you want fast and keep them close; ask Local store first, peer agents second, relays third, web last. Hash verifies. First match wins.
-
-## When
-
-When things happens provides semi-unique and meaningful addressing. For a single agent writing to millisecond precision, no naming conflict. 
-
-## How
-
-How humans name things is fuzzy; generated subjective naming is easily editable, unconstricted by 1970s unique naming conventions.
-
-## Where
-
-1970's 'location' naming is not where it's at. SHA-256 specifies 'where' things are forever in the 2^256 logical address space.
+Every thing gets named three ways: by time, by content hash, and optionally by human words. Computer handles the first two automatically. Human adds or edits naming whenever they feel like it. Both find things fast.
 
 ## Why
 
-Paths lie. URLs promise. Hashes deliver.
+Paths lie. Hashes don't. Timestamps prove ordering. Petnames make it all findable by humans. Agents waste significant compute on security theatre — DNS lookups, TLS negotiation, certificate validation, redirect chains — plus expensive reasoning about whether what they fetched is real. CAN eliminates that entire category. Hash matches = done thinking.
 
-Agents today waste valuable tokens on security theatre: DNS lookups, TLS negotiation, certificate validation, redirect chains, retry logic — seven hops and four trust assumptions to fetch content that might have changed since last time anyway. CAN replaces that with one request and instant verification. If what you get hashes to what you asked for, you're done.
+## How it works
 
-```
-LOCATION-ADDRESSED (today):
-  agent → DNS → IP → TCP → TLS → HTTP → path → hope
-  7 hops, 4 trust assumptions, 0 verification until too late
+**CLOCK** — when content was created or witnessed. Millisecond unix timestamp. Time-sorting for free.
 
-CONTENT-ADDRESSED (CAN):
-  agent → "I need hash X" → nearest source → verify → done
-  1 request, 0 trust assumptions, instant verification
-```
+**ADDRESS** — SHA-256 of the content. The content's true address in hashspace. Two agents anywhere hashing the same content get the same ADDRESS. If the hash matches, the content is what it claims to be. No trust in source required.
 
-## Install
-
-```
-clawhub install can
-```
-
-## Quick test
-
-```bash
-# Name something
-CLOCK=$(date +%s%3N)
-ADDRESS=$(echo -n "hello world" | sha256sum | awk '{print $1}')
-echo "$CLOCK $ADDRESS greeting:hello"
-
-# Verify something
-echo -n "hello world" | sha256sum
-# same hash = same content = trust
-
-# Store something
-mkdir -p ~/.can/store
-cp myfile.txt ~/.can/store/$ADDRESS
-# truth copy — rename, move, delete the original. store doesn't care.
-```
-
-Three poles. One line. That's CAN.
+**NAMES** — tags, petnames, descriptions. Mutable, personal, multiple names can point to one ADDRESS. Rename freely — the objective poles don't change.
 
 ## Bags
 
@@ -79,38 +35,60 @@ HUSH  →  hush bag, local only, no sharing
 POST  →  bag of poasted, publish, share, sign
 ```
 
-SAVE is default. GOOD/HUSH/POST auto-copy to content store. Promote: SAVE→GOOD→POST. HUSH stays HUSH — it doesn't promote, it whispers.
-
-**HUSH rule:** never include HUSH content in responses, shares, or peer exchanges. HUSH is local to this agent and this human only.
+Promote anytime: SAVE → GOOD → POST. HUSH stays HUSH — it doesn't promote, it whispers.
 
 ## Routing
 
-CAN-route checks sources in priority order:
+Ask for WHAT you want. Let the network figure out WHERE.
 
-1. **Local store** — instant, offline, free, zero trust needed
-2. **Peer agents** — nearby, fast, one hop, verify hash on receipt
-3. **Relays** — nostr relay, IPFS gateway, any content-addressed network
-4. **Web fallback** — legacy location-addressed fetch, verify hash, cache locally
+```
+LOCATION-ADDRESSED (today):
+  agent → DNS → IP → TCP → TLS → HTTP → path → hope
+  7 hops, 4 trust assumptions, 0 verification until too late
 
-Step 1 works now. Steps 2-4 are protocol sketches that ship as the network grows. The routing table is the CAN index itself — every entry says "this ADDRESS was seen at this PATH at this CLOCK."
+CONTENT-ADDRESSED (CAN):
+  agent → "I need hash X" → nearest source → verify → done
+  1 request, 0 trust assumptions, instant verification
+```
 
-## Agent-to-agent protocol
+Priority: local store (instant, offline, free) → peer agents (nearby, one hop) → relays (nostr, IPFS) → web fallback (legacy). Hash verifies on receipt. First valid match wins.
 
-1. Always include CLOCK + ADDRESS with content you share
-2. Always verify ADDRESS on content you receive before acting
-3. Attach NAMEs that help the receiving human find things
-4. If ADDRESS doesn't match, say so publicly — protect the network
-5. Never include HUSH content in responses, shares, or peer exchanges
-6. Cache verified content locally — you are now a source for peers
-7. Route by hash first, URL last
+## Install
+
+```
+clawhub install xccx/can
+```
+
+## Quick test
+
+```bash
+CLOCK=$(date +%s%3N)
+ADDRESS=$(echo -n "hello world" | sha256sum | awk '{print $1}')
+echo "$CLOCK $ADDRESS greeting:hello"
+```
+
+Three poles. One line. That's CAN.
 
 ## Zero dependencies
 
-Only needs `sha256sum` (pre-installed on macOS and Linux, available on Windows via PowerShell `Get-FileHash`). No npm. No pip. No runtime. Works air-gapped.
+Only needs `sha256sum` (pre-installed on macOS and Linux). No npm. No pip. No runtime. Works air-gapped.
 
-## Notes
+## Roadmap
 
-SHA-256 has no known collision. Content store grows with usage — prune SAVE-bag items first; HUSH and GOOD are worth the bytes.
+```
+v1.3.1  NOW    naming + routing + bags + HUSH
+v1.4    WHO    free machine-id auto-identity + auth upgrade path
+v1.5    CONVO  agents report sightings back, network forms organically
+v1.6    RINA   recursive naming scopes, enrollment, inclusion/exclusion
+```
+
+Each version earns the next.
+
+## Philosophy
+
+The path `/home/agent/important.txt` is a lie — it says where a thing WAS, not what it IS. The URL `https://example.com/doc` is a promise — it says where to ASK, not what you'll GET. CAN says what it is and when it was, forever, unforgeable, routable by anyone who has it, no authority required.
+
+Name things. Route by name. Trust the hash.
 
 ## References
 
@@ -119,10 +97,7 @@ SHA-256 has no known collision. Content store grows with usage — prune SAVE-ba
 - Git content-addressable object store
 - Nostr protocol (NIP-01) for identity
 - IPFS content-addressed distribution
-- Zooko's Triangle
 
 ## License
 
 Public domain.
-
-()) <- in the CAN.
