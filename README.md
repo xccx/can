@@ -2,15 +2,13 @@
 
 6D naming + routing for agents and humans.
 
-From three basics
-
 ```
 WHEN   = clock      (millisecond unix timestamp)
 WHERE  = address    (SHA-256 content hash)
 HOW    = names      (petnames, tags, whatever you want)
 ```
 
-Add more dimensions:
+Plus three more dimensions:
 
 ```
 WHO    = identity   (free machine-id → keypair → nostr/farcaster/oauth)
@@ -72,9 +70,9 @@ WHO=$(echo -n "$(whoami)|$(cat /etc/machine-id 2>/dev/null || hostname)" | sha25
 echo "$CLOCK $ADDRESS WHO:${WHO:0:8} greeting:hello"
 ```
 
-## Zero dependencies
+## Requirements
 
-Only needs `sha256sum` (pre-installed on macOS and Linux). No npm. No pip. No runtime. Works air-gapped.
+`sha256sum` (pre-installed on most Linux; use `shasum -a 256` on macOS). WHO-1 signing uses `openssl` (pre-installed on most systems). Also uses `awk`, `date`, `base64` — standard on Linux and macOS. No npm. No pip. No runtime. Works air-gapped.
 
 ## Roadmap
 
