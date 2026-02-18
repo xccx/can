@@ -2,7 +2,7 @@
 name: CAN
 description: "6D naming + routing for agents. Name any content by WHAT (hashable bits), WHEN (clock), WHERE (SHA-256 address), HOW (natural language), WHY (intent), and WHO (id). Route by name and address, not location. Verify integrity, timestamp events, find things by time/hash/words, route content from nearest source."
 homepage: https://github.com/xccx/can
-metadata: {"openclaw":{"emoji":"⌛","requires":{"bins":["sha256sum"]}}}
+metadata: {"openclaw":{"emoji":"⌛","requires":{"bins":["sha256sum","openssl","base64","awk","date"]}}}
 ---
 
 # CAN: Clock Address Naming
@@ -58,6 +58,8 @@ ADDRESS=$(sha256sum {file} | awk '{print $1}')
 ```
 
 Two agents anywhere hashing the same content get the same ADDRESS. If the hash matches, the content is what it claims. The thermodynamic pointer — logical, objective, true, inalienable, unstompable.
+
+Note: macOS may use `shasum -a 256` instead of `sha256sum`. WHO-1 signing requires `openssl` (pre-installed on most systems). WHO-0 reads platform identifiers (`/etc/machine-id` on Linux, `ioreg` on macOS, `Get-CimInstance` on Windows).
 
 ### 4. HOW (humane namespace)
 
@@ -124,7 +126,7 @@ RECORD="$CLOCK:$ADDRESS"
 SIGNATURE=$(echo -n "$RECORD" | openssl pkeyutl -sign -inkey "$CAN_WHO_KEY" | base64 -w0)
 ```
 
-Self-signed. Proves consistency: same WHO saved A and B. No external authority needed.
+Self-signed. Proves consistency: same WHO saved A and B. No external authority needed. Back up `~/.can/who.key` — if lost, generate a new keypair and re-claim via retroactive linking.
 
 **WHO-2: auth upgrade, portable**
 
