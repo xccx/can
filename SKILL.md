@@ -1,5 +1,6 @@
 ---
 name: CAN
+version: 1.6.0
 description: "NAMING + ROUTING for agents. v1.6 WOT: Web of Trust built on recursive scopes. Trust isn't declared, it's accumulated from SAWs. Every verified thing is evidence. Every WHO is a reputation. Every scope is a trust boundary. CAN names trust the way it names everything: by time, by hash, by who."
 homepage: https://github.com/xccx/can
 metadata: {"openclaw":{"emoji":"⌛","requires":{"bins":["sha256sum","openssl","base64","awk","date"]}}}
@@ -247,7 +248,7 @@ Each version earns the next.
 - Van Jacobson, A New Way to Look at Networking (Google Tech Talk, 2006)
 - John Day, Recursive InterNetwork Architecture (RINA)
 - Linus Torvalds, Git content-addressable object store
-- Zooko's Triangle (CAN quintuple the petnaming solution)
+- Zooko's Triangle (CAN amplifies the petnaming solution)
 
 ## TL;DR
 
